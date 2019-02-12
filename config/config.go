@@ -12,7 +12,7 @@ func setupDefaults() {
 	viper.SetDefault("continentCode", "na")
 }
 
-func InitializeConfig() {
+func initializeConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("etc/")
 	viper.SetConfigType("yaml")
@@ -23,4 +23,8 @@ func InitializeConfig() {
 	if err != nil {
 		panic(fmt.Errorf("Fatal error while reading config file: %s", err))
 	}
+}
+
+func init() {
+	initializeConfig()
 }
