@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const timeZone string = "GMT-8"
 const clientKey string = "eJUWrzRv34qFSaYk"
 const secret string = "Cyu5jcR4zyK6QEPn1hdIGXB5QIDAQABMA0GC"
 const mainUrlFormat string = "https://eco-{country}-api.ecovacs.com/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}"
@@ -20,15 +21,51 @@ eDMGq0m0RQYDpf9l0umqYURpJ5fmfvH/gjfHe3Eg/NTLm7QEa0a0Il2t3Cyu5jcR
 -----END PUBLIC KEY-----`
 var publicKey *rsa.PublicKey
 
-type Vaccapi struct {
-	publicKey []byte
+type metaData struct {
+	country string
+	lang string
 	deviceId string
-	countryCode string
-	continentCode string
+	appCode string
+	appVersion string
+	channel string
+	deviceType string
+}
+
+type Vaccapi struct {
+	meta metaData
 }
 
 func (api Vaccapi) login() {
 
+}
+
+func (api Vaccapi) signParams(params map[string]string) {
+	res := make(map[string]string)
+	res["authTimespan"] = 0
+	res["authTimeZone"] = timeZone
+	res["country"] = api.meta.country
+	res["lang"] = api.meta.lang
+	res["deviceId"] = api.meta.sdeviceId
+	res["appCode"] = api.meta.appCode
+	res["appVersion"] = api.meta.appVersion
+	res["channel"] = api.meta.channel
+	res["deviceType"] = api.meta.deviceType
+
+	sign_text = clientKey // TODO : 
+	/*
+	 * ClientKey + (k + '=' + res[k] for k in keys(res)) + secret 
+	 */
+}
+
+func encrypt(payload string) []byte {
+	payload_b := []byte(payload)
+	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, payload_b)
+
+	if err != nil {
+		log.WithFields(log.Fields{"payload_str": payload}).Error("Unable to encrypt payload string")
+	}
+
+	return ciphertext
 }
 
 func initializePublicKey() *rsa.PublicKey {
@@ -45,17 +82,6 @@ func initializePublicKey() *rsa.PublicKey {
 	return pub.(*rsa.PublicKey)
 }
 
-func Encrypt(payload string) []byte {
-	payload_b := []byte(payload)
-	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, payload_b)
-
-	if err != nil {
-		log.WithFields(log.Fields{"payload_str": payload}).Error("Unable to encrypt payload string")
-	}
-
-	return ciphertext
-}
-
 func init() {
 	publicKey = initializePublicKey()
 }
@@ -63,6 +89,13 @@ func init() {
 // Factory method to create a new api instance
 func NewVaccapi() Vaccapi {
 	var api Vaccapi
-	api.deviceId = viper.Get("deviceId").(string)
+	api.meta = metaData{
+		country: "us", 
+		lang: "en",
+		deviceId: "test",
+		appCode: "test",
+		appVersion: "test",
+		channel: "test",
+		deviceType: "test"}
 	return api
 }
